@@ -93,7 +93,9 @@ const eur = (n) => Number(n).toFixed(2).replace(".", ",") + " €";
 let items = [];
 try {
   const raw = decodeURIComponent(location.hash.replace(/^#cart=/, ""));
-  items = JSON.parse(atob(raw)).map(([v, q, p]) => ({ variant_id: v, quantity: q, properties: p || {} }));
+  const bin = atob(raw);
+  const txt = new TextDecoder().decode(Uint8Array.from(bin, (c) => c.charCodeAt(0)));
+  items = JSON.parse(txt).map(([v, q, p]) => ({ variant_id: v, quantity: q, properties: p || {} }));
 } catch (e) { items = []; }
 
 async function call(extra) {
@@ -135,7 +137,12 @@ async function refresh(showPromo) {
 
 if (items.length) {
   $("f").hidden = false;
-  refresh(false).then((ok) => { $("pay").disabled = !ok; });
+  const pre = new URLSearchParams(location.search).get("code");
+  if (pre) $("promo").value = pre;
+  refresh(!!pre).then(async (ok) => {
+    if (!ok && pre) { $("promo").value = ""; $("promoMsg").textContent = ""; ok = await refresh(false); }
+    $("pay").disabled = !ok;
+  });
 } else {
   $("empty").hidden = false;
 }
