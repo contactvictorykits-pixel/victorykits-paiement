@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Paiement – VICTORY KITS</title>
+<style>
+  :root{--bg:#000;--panel:#0c0c0c;--fg:#fff;--mut:#9a9a9a;--line:#262626;--acc:#2fd36b;--err:#ff6b6b}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.5 -apple-system,"Helvetica Neue",Arial,sans-serif}
+  .wrap{display:grid;grid-template-columns:1fr 1fr;min-height:100vh}
+  .left{padding:40px 48px;max-width:620px;justify-self:end;width:100%}
+  .right{background:var(--panel);border-left:1px solid var(--line);padding:40px 48px}
+  .right>div{max-width:440px}
+  h1{font-size:20px;letter-spacing:.1em;margin:0 0 28px}
+  h2{font-size:18px;margin:28px 0 12px}
+  input,select{width:100%;padding:14px;background:#0d0d0d;color:var(--fg);border:1px solid var(--line);border-radius:8px;font:inherit;margin-bottom:12px}
+  input::placeholder{color:#777}
+  input:focus,select:focus,button:focus-visible{outline:2px solid var(--acc);outline-offset:1px}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .pay-box{border:1px solid var(--line);border-radius:8px;padding:14px;color:var(--mut);font-size:14px}
+  .go{width:100%;margin-top:20px;padding:16px;background:var(--acc);color:#000;border:0;border-radius:8px;font:inherit;font-weight:700;font-size:17px;cursor:pointer}
+  .go:disabled{opacity:.5;cursor:wait}
+  #err{color:var(--err);min-height:1.5em;margin-top:12px}
+  .line{display:flex;gap:14px;align-items:center;margin-bottom:16px}
+  .thumb{position:relative;width:64px;height:64px;flex:none;border:1px solid var(--line);border-radius:8px;background:#111}
+  .thumb img{width:100%;height:100%;object-fit:cover;border-radius:8px;display:block}
+  .qty{position:absolute;top:-8px;right:-8px;min-width:22px;height:22px;border-radius:11px;background:#fff;color:#000;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center}
+  .nm{flex:1}.nm small{display:block;color:var(--mut)}
+  .promo{display:flex;gap:10px;margin:20px 0}
+  .promo input{margin:0}
+  .promo button{padding:0 18px;background:#1a1a1a;color:#fff;border:1px solid var(--line);border-radius:8px;font:inherit;cursor:pointer}
+  .sum{display:flex;justify-content:space-between;margin:8px 0;color:var(--mut)}
+  .sum.big{color:var(--fg);font-size:20px;font-weight:700;margin-top:16px}
+  .ok{color:var(--acc)}
+  @media(max-width:800px){.wrap{grid-template-columns:1fr}.right{order:-1;border-left:0;border-bottom:1px solid var(--line);padding:24px 20px}.left{padding:24px 20px;justify-self:stretch}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <main class="left">
+    <h1>VICTORY KITS</h1>
+    <form id="f" hidden>
+      <h2>Contact</h2>
+      <input id="email" type="email" placeholder="Adresse e-mail" autocomplete="email" required>
+
+      <h2>Livraison</h2>
+      <select id="cc" autocomplete="country" aria-label="Pays">
+        <option value="FR">France</option><option value="BE">Belgique</option>
+        <option value="CH">Suisse</option><option value="LU">Luxembourg</option>
+        <option value="DE">Allemagne</option><option value="ES">Espagne</option>
+        <option value="IT">Italie</option><option value="NL">Pays-Bas</option>
+        <option value="PT">Portugal</option><option value="GB">Royaume-Uni</option>
+      </select>
+      <div class="row">
+        <input id="fn" placeholder="Prénom" autocomplete="given-name" required>
+        <input id="ln" placeholder="Nom" autocomplete="family-name" required>
+      </div>
+      <input id="a1" placeholder="Adresse" autocomplete="address-line1" required>
+      <input id="a2" placeholder="Appartement, suite, etc. (facultatif)" autocomplete="address-line2">
+      <div class="row">
+        <input id="zip" placeholder="Code postal" autocomplete="postal-code" required>
+        <input id="city" placeholder="Ville" autocomplete="address-level2" required>
+      </div>
+      <input id="tel" type="tel" placeholder="Téléphone (facultatif)" autocomplete="tel">
+
+      <h2>Paiement</h2>
+      <div class="pay-box">Toutes les transactions sont sécurisées et chiffrées. Vous réglerez par carte sur la page de paiement sécurisée qui s’ouvre à l’étape suivante.</div>
+      <div id="err" role="alert"></div>
+      <button class="go" id="pay" type="submit" disabled>Continuer vers le paiement</button>
+    </form>
+    <p id="empty" hidden>Votre panier est vide. <a href="https://victorykits.fr" style="color:#fff">Retourner à la boutique</a></p>
+  </main>
+
+  <aside class="right"><div>
+    <div id="lines"></div>
+    <div class="promo">
+      <input id="promo" placeholder="Code de réduction" aria-label="Code de réduction" autocapitalize="characters">
+      <button id="apply" type="button">Valider</button>
+    </div>
+    <div id="promoMsg" class="sum"></div>
+    <div class="sum"><span id="subLabel">Sous-total</span><span id="sub">–</span></div>
+    <div class="sum ok" id="discRow" hidden><span id="discLabel">Réduction</span><span id="disc"></span></div>
+    <div class="sum big"><span>Total</span><span id="total">–</span></div>
+  </div></aside>
+</div>
+
+<script>
+const API = "https://uylduzmyvkbkxzwnhsgh.supabase.co/functions/v1/create-checkout";
+const $ = (id) => document.getElementById(id);
+const eur = (n) => Number(n).toFixed(2).replace(".", ",") + " €";
+
+let items = [];
+try {
+  const raw = decodeURIComponent(location.hash.replace(/^#cart=/, ""));
+  items = JSON.parse(atob(raw)).map(([v, q, p]) => ({ variant_id: v, quantity: q, properties: p || {} }));
+} catch (e) { items = []; }
+
+async function call(extra) {
+  const r = await fetch(API, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ items, discount_code: $("promo").value.trim(), ...extra }) });
+  const d = await r.json();
+  if (!r.ok) throw new Error(d.error || "Erreur");
+  return d;
+}
+
+function render(d) {
+  const box = $("lines"); box.textContent = "";
+  let n = 0;
+  d.lines.forEach((l) => {
+    n += l.quantity;
+    const row = document.createElement("div"); row.className = "line";
+    const th = document.createElement("div"); th.className = "thumb";
+    if (l.image) { const im = document.createElement("img"); im.src = l.image; im.alt = ""; th.appendChild(im); }
+    const q = document.createElement("span"); q.className = "qty"; q.textContent = l.quantity; th.appendChild(q);
+    const nm = document.createElement("div"); nm.className = "nm"; nm.textContent = l.title;
+    if (l.variant) { const s = document.createElement("small"); s.textContent = l.variant; nm.appendChild(s); }
+    Object.entries(l.properties || {}).filter(([k]) => !k.startsWith("_")).forEach(([k, val]) => {
+      const s = document.createElement("small"); s.textContent = k + " : " + val; nm.appendChild(s);
+    });
+    const pr = document.createElement("div"); pr.textContent = eur(l.price * l.quantity);
+    row.append(th, nm, pr); box.appendChild(row);
+  });
+  $("subLabel").textContent = "Sous-total · " + n + (n > 1 ? " articles" : " article");
+  $("sub").textContent = eur(d.subtotal);
+  $("discRow").hidden = !d.discount;
+  if (d.discount) { $("discLabel").textContent = "Réduction (" + d.discount_code + ")"; $("disc").textContent = "−" + eur(d.discount); }
+  $("total").textContent = eur(d.total);
+}
+
+async function refresh(showPromo) {
+  $("promoMsg").textContent = "";
+  try { render(await call({ preview: true })); if (showPromo && $("promo").value.trim()) { $("promoMsg").textContent = "Code appliqué"; $("promoMsg").className = "sum ok"; } return true; }
+  catch (e) { $("promoMsg").className = "sum"; $("promoMsg").style.color = "var(--err)"; $("promoMsg").textContent = e.message === "code promo invalide" ? "Ce code de réduction n’est pas valide." : "Impossible de charger le panier."; return false; }
+}
+
+if (items.length) {
+  $("f").hidden = false;
+  refresh(false).then((ok) => { $("pay").disabled = !ok; });
+} else {
+  $("empty").hidden = false;
+}
+
+$("apply").addEventListener("click", async () => {
+  $("promoMsg").style.color = "";
+  const ok = await refresh(true);
+  if (!ok) { $("promo").value = ""; await refresh(false); $("promoMsg").style.color = "var(--err)"; $("promoMsg").textContent = "Ce code de réduction n’est pas valide."; }
+});
+
+$("f").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  $("err").textContent = "";
+  $("pay").disabled = true; $("pay").textContent = "Chargement…";
+  try {
+    const d = await call({
+      email: $("email").value.trim(),
+      shipping: {
+        first_name: $("fn").value.trim(), last_name: $("ln").value.trim(),
+        address1: $("a1").value.trim(), address2: $("a2").value.trim(),
+        zip: $("zip").value.trim(), city: $("city").value.trim(),
+        country_code: $("cc").value, phone: $("tel").value.trim()
+      }
+    });
+    if (d.purchase_url) { location.href = d.purchase_url; return; }
+    throw new Error("Erreur");
+  } catch (err) {
+    $("err").textContent = "Le paiement n’a pas pu démarrer. Vérifiez vos informations et réessayez.";
+    $("pay").disabled = false; $("pay").textContent = "Continuer vers le paiement";
+  }
+});
+</script>
+</body>
+</html>
