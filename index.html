@@ -5,8 +5,10 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Paiement – VICTORY KITS</title>
 <style>
-  :root{--bg:#000;--panel:#0c0c0c;--fg:#fff;--mut:#9a9a9a;--line:#262626;--acc:#2fd36b;--err:#ff6b6b}
+  :root{--bg:#fff;--panel:#f5f5f5;--fg:#111;--mut:#6b6b6b;--line:#d9d9d9;--acc:#1e9e50;--err:#d93025}
   *{box-sizing:border-box}
+  [hidden]{display:none!important}
+  input:-webkit-autofill,input:-webkit-autofill:focus{-webkit-text-fill-color:#111;box-shadow:0 0 0 1000px #fff inset;caret-color:#111}
   body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.5 -apple-system,"Helvetica Neue",Arial,sans-serif}
   .wrap{display:grid;grid-template-columns:1fr 1fr;min-height:100vh}
   .left{padding:40px 48px;max-width:620px;justify-self:end;width:100%}
@@ -14,25 +16,31 @@
   .right>div{max-width:440px}
   h1{font-size:20px;letter-spacing:.1em;margin:0 0 28px}
   h2{font-size:18px;margin:28px 0 12px}
-  input,select{width:100%;padding:14px;background:#0d0d0d;color:var(--fg);border:1px solid var(--line);border-radius:8px;font:inherit;margin-bottom:12px}
-  input::placeholder{color:#777}
+  input,select{width:100%;padding:14px;background:#fff;color:var(--fg);border:1px solid var(--line);border-radius:8px;font:inherit;margin-bottom:12px}
+  input::placeholder{color:#8a8a8a}
   input:focus,select:focus,button:focus-visible{outline:2px solid var(--acc);outline-offset:1px}
   .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
   .pay-box{border:1px solid var(--line);border-radius:8px;padding:14px;color:var(--mut);font-size:14px}
-  .go{width:100%;margin-top:20px;padding:16px;background:var(--acc);color:#000;border:0;border-radius:8px;font:inherit;font-weight:700;font-size:17px;cursor:pointer}
+  .go{width:100%;margin-top:20px;padding:16px;background:var(--acc);color:#fff;border:0;border-radius:8px;font:inherit;font-weight:700;font-size:17px;cursor:pointer}
   .go:disabled{opacity:.5;cursor:wait}
   #err{color:var(--err);min-height:1.5em;margin-top:12px}
   .line{display:flex;gap:14px;align-items:center;margin-bottom:16px}
-  .thumb{position:relative;width:64px;height:64px;flex:none;border:1px solid var(--line);border-radius:8px;background:#111}
+  .thumb{position:relative;width:64px;height:64px;flex:none;border:1px solid var(--line);border-radius:8px;background:#fff}
   .thumb img{width:100%;height:100%;object-fit:cover;border-radius:8px;display:block}
-  .qty{position:absolute;top:-8px;right:-8px;min-width:22px;height:22px;border-radius:11px;background:#fff;color:#000;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center}
+  .qty{position:absolute;top:-8px;right:-8px;min-width:22px;height:22px;border-radius:11px;background:#333;color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center}
   .nm{flex:1}.nm small{display:block;color:var(--mut)}
   .promo{display:flex;gap:10px;margin:20px 0}
   .promo input{margin:0}
-  .promo button{padding:0 18px;background:#1a1a1a;color:#fff;border:1px solid var(--line);border-radius:8px;font:inherit;cursor:pointer}
+  .promo button{padding:0 18px;background:#ececec;color:#111;border:1px solid var(--line);border-radius:8px;font:inherit;cursor:pointer}
   .sum{display:flex;justify-content:space-between;margin:8px 0;color:var(--mut)}
   .sum.big{color:var(--fg);font-size:20px;font-weight:700;margin-top:16px}
   .ok{color:var(--acc)}
+  #embedWrap{margin-top:8px}
+  .recap{border:1px solid var(--line);border-radius:8px;padding:14px;color:var(--mut);font-size:14px;margin-bottom:16px}
+  .recap strong{color:#111}
+  .link{background:none;border:0;color:#111;text-decoration:underline;cursor:pointer;font:inherit;padding:0;margin-top:8px}
+  #thanks{text-align:center;padding:64px 0}
+  #thanks h2{font-size:24px}
   @media(max-width:800px){.wrap{grid-template-columns:1fr}.right{order:-1;border-left:0;border-bottom:1px solid var(--line);padding:24px 20px}.left{padding:24px 20px;justify-self:stretch}}
 </style>
 </head>
@@ -65,11 +73,22 @@
       <input id="tel" type="tel" placeholder="Téléphone (facultatif)" autocomplete="tel">
 
       <h2>Paiement</h2>
-      <div class="pay-box">Toutes les transactions sont sécurisées et chiffrées. Vous réglerez par carte sur la page de paiement sécurisée qui s’ouvre à l’étape suivante.</div>
+      <div class="pay-box"><strong style="color:#111">Paiement sécurisé</strong><br>À l’étape suivante, vous réglez directement ici par carte bancaire. Vos données bancaires sont chiffrées.</div>
       <div id="err" role="alert"></div>
       <button class="go" id="pay" type="submit" disabled>Continuer vers le paiement</button>
     </form>
-    <p id="empty" hidden>Votre panier est vide. <a href="https://victorykits.fr" style="color:#fff">Retourner à la boutique</a></p>
+    <section id="embedWrap" hidden>
+      <h2>Paiement</h2>
+      <div class="recap" id="recap"></div>
+      <div id="embed"></div>
+      <button class="link" id="back" type="button">← Modifier mes informations</button>
+    </section>
+    <section id="thanks" hidden>
+      <h2>Merci pour votre commande !</h2>
+      <p>Votre paiement a bien été reçu. Vous allez recevoir un e-mail de confirmation.</p>
+      <p><a href="https://victorykits.fr" style="color:#111">Retourner à la boutique</a></p>
+    </section>
+    <p id="empty" hidden>Votre panier est vide. <a href="https://victorykits.fr" style="color:#111">Retourner à la boutique</a></p>
   </main>
 
   <aside class="right"><div>
@@ -153,20 +172,61 @@ $("apply").addEventListener("click", async () => {
   if (!ok) { $("promo").value = ""; await refresh(false); $("promoMsg").style.color = "var(--err)"; $("promoMsg").textContent = "Ce code de réduction n’est pas valide."; }
 });
 
+function mountEmbed(d, v) {
+  $("f").hidden = true;
+  $("embedWrap").hidden = false;
+  $("recap").innerHTML = "";
+  const l1 = document.createElement("div"); l1.innerHTML = "<strong>Contact</strong> : "; l1.append(v.email);
+  const l2 = document.createElement("div"); l2.innerHTML = "<strong>Livraison</strong> : ";
+  l2.append(v.fn + " " + v.ln + ", " + v.a1 + (v.a2 ? " " + v.a2 : "") + ", " + v.zip + " " + v.city);
+  $("recap").append(l1, l2);
+  const box = $("embed"); box.textContent = "";
+  const el = document.createElement("div");
+  const at = {
+    "plan-id": d.plan_id, "session": d.session_id,
+    "theme": "light", "theme-accent-color": "green",
+    "hide-price": "true", "hide-email": "true", "hide-address": "true",
+    "return-url": location.origin + location.pathname + "?merci=1",
+    "prefill-email": v.email, "prefill-name": v.fn + " " + v.ln,
+    "prefill-address-country": v.cc, "prefill-address-line1": v.a1, "prefill-address-line2": v.a2,
+    "prefill-address-city": v.city, "prefill-address-postal-code": v.zip
+  };
+  Object.entries(at).forEach(([k, val]) => { if (val) el.setAttribute("data-whop-checkout-" + k, val); });
+  box.appendChild(el);
+  if (!document.querySelector('script[data-vk-loader]')) {
+    const sc = document.createElement("script");
+    sc.async = true; sc.src = "https://js.whop.com/static/checkout/loader.js"; sc.setAttribute("data-vk-loader", "1");
+    document.head.appendChild(sc);
+  }
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+$("back").addEventListener("click", () => {
+  $("embedWrap").hidden = true; $("f").hidden = false;
+  $("pay").disabled = false; $("pay").textContent = "Continuer vers le paiement";
+});
+
+if (new URLSearchParams(location.search).get("merci")) {
+  $("f").hidden = true; $("empty").hidden = true; $("thanks").hidden = false;
+  document.querySelector(".right").hidden = true;
+  document.querySelector(".wrap").style.gridTemplateColumns = "1fr";
+}
+
 $("f").addEventListener("submit", async (e) => {
   e.preventDefault();
   $("err").textContent = "";
   $("pay").disabled = true; $("pay").textContent = "Chargement…";
+  const v = {
+    email: $("email").value.trim(), fn: $("fn").value.trim(), ln: $("ln").value.trim(),
+    a1: $("a1").value.trim(), a2: $("a2").value.trim(), zip: $("zip").value.trim(),
+    city: $("city").value.trim(), cc: $("cc").value, tel: $("tel").value.trim()
+  };
   try {
     const d = await call({
-      email: $("email").value.trim(),
-      shipping: {
-        first_name: $("fn").value.trim(), last_name: $("ln").value.trim(),
-        address1: $("a1").value.trim(), address2: $("a2").value.trim(),
-        zip: $("zip").value.trim(), city: $("city").value.trim(),
-        country_code: $("cc").value, phone: $("tel").value.trim()
-      }
+      email: v.email,
+      shipping: { first_name: v.fn, last_name: v.ln, address1: v.a1, address2: v.a2, zip: v.zip, city: v.city, country_code: v.cc, phone: v.tel }
     });
+    if (d.plan_id && d.session_id) { mountEmbed(d, v); return; }
     if (d.purchase_url) { location.href = d.purchase_url; return; }
     throw new Error("Erreur");
   } catch (err) {
