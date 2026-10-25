@@ -35,6 +35,8 @@
   .sum{display:flex;justify-content:space-between;margin:8px 0;color:var(--mut)}
   .sum.big{color:var(--fg);font-size:20px;font-weight:700;margin-top:16px}
   .ok{color:var(--acc)}
+  .methods{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+  .methods span{border:1px solid var(--line);border-radius:6px;padding:6px 10px;font-size:13px;color:#111;background:#fff}
   #embedWrap{margin-top:8px}
   .recap{border:1px solid var(--line);border-radius:8px;padding:14px;color:var(--mut);font-size:14px;margin-bottom:16px}
   .recap strong{color:#111}
@@ -73,16 +75,10 @@
       <input id="tel" type="tel" placeholder="Téléphone (facultatif)" autocomplete="tel">
 
       <h2>Paiement</h2>
-      <div class="pay-box"><strong style="color:#111">Paiement sécurisé</strong><br>À l’étape suivante, vous réglez directement ici par carte bancaire. Vos données bancaires sont chiffrées.</div>
-      <div id="err" role="alert"></div>
-      <button class="go" id="pay" type="submit" disabled>Continuer vers le paiement</button>
-    </form>
-    <section id="embedWrap" hidden>
-      <h2>Paiement</h2>
-      <div class="recap" id="recap"></div>
+      <div class="pay-box"><strong style="color:#111">Paiement sécurisé</strong><br><span id="payHint">Renseignez votre e-mail et votre adresse ci-dessus : le paiement s’affiche ici automatiquement.</span> Vos données bancaires sont chiffrées.<div class="methods"><span>Carte bancaire</span><span>Visa</span><span>Mastercard</span><span>American Express</span><span>Apple Pay</span><span>Google Pay</span></div><div style="margin-top:8px;font-size:12px">Apple Pay et Google Pay sont proposés selon votre appareil.</div></div>
       <div id="embed"></div>
-      <button class="link" id="back" type="button">← Modifier mes informations</button>
-    </section>
+      <div id="err" role="alert"></div>
+    </form>
     <section id="thanks" hidden>
       <h2>Merci pour votre commande !</h2>
       <p>Votre paiement a bien été reçu. Vous allez recevoir un e-mail de confirmation.</p>
@@ -126,21 +122,31 @@ async function call(extra) {
 
 function render(d) {
   const box = $("lines"); box.textContent = "";
-  let n = 0;
-  d.lines.forEach((l) => {
-    n += l.quantity;
-    const row = document.createElement("div"); row.className = "line";
+  const isFlo = (l) => /flocage/i.test(l.title || "");
+  const main = d.lines.filter((l) => !isFlo(l));
+  const flo = d.lines.filter(isFlo);
+  const row = (img, qty, title, sub, price) => {
+    const r = document.createElement("div"); r.className = "line";
     const th = document.createElement("div"); th.className = "thumb";
-    if (l.image) { const im = document.createElement("img"); im.src = l.image; im.alt = ""; th.appendChild(im); }
-    const q = document.createElement("span"); q.className = "qty"; q.textContent = l.quantity; th.appendChild(q);
-    const nm = document.createElement("div"); nm.className = "nm"; nm.textContent = l.title;
-    if (l.variant) { const s = document.createElement("small"); s.textContent = l.variant; nm.appendChild(s); }
-    Object.entries(l.properties || {}).filter(([k]) => !k.startsWith("_")).forEach(([k, val]) => {
-      const s = document.createElement("small"); s.textContent = k + " : " + val; nm.appendChild(s);
-    });
-    const pr = document.createElement("div"); pr.textContent = eur(l.price * l.quantity);
-    row.append(th, nm, pr); box.appendChild(row);
+    if (img) { const im = document.createElement("img"); im.src = img; im.alt = ""; th.appendChild(im); }
+    const q = document.createElement("span"); q.className = "qty"; q.textContent = qty; th.appendChild(q);
+    const nm = document.createElement("div"); nm.className = "nm"; nm.textContent = title;
+    sub.forEach((t) => { const sm = document.createElement("small"); sm.textContent = t; nm.appendChild(sm); });
+    const pr = document.createElement("div"); pr.textContent = eur(price);
+    r.append(th, nm, pr); box.appendChild(r);
+  };
+  let n = 0;
+  main.forEach((l) => {
+    n += l.quantity;
+    const sub = [];
+    if (l.variant) sub.push(l.variant);
+    Object.entries(l.properties || {}).filter(([k]) => !k.startsWith("_")).forEach(([k, val]) => sub.push(k + " : " + val));
+    row(l.image, l.quantity, l.title, sub, l.price * l.quantity);
   });
+  if (flo.length) {
+    const fq = flo.reduce((t, l) => t + l.quantity, 0);
+    row(null, fq, "Flocage personnalisé", [], flo.reduce((t, l) => t + l.price * l.quantity, 0));
+  }
   $("subLabel").textContent = "Sous-total · " + n + (n > 1 ? " articles" : " article");
   $("sub").textContent = eur(d.subtotal);
   $("discRow").hidden = !d.discount;
@@ -160,7 +166,7 @@ if (items.length) {
   if (pre) $("promo").value = pre;
   refresh(!!pre).then(async (ok) => {
     if (!ok && pre) { $("promo").value = ""; $("promoMsg").textContent = ""; ok = await refresh(false); }
-    $("pay").disabled = !ok;
+    schedule();
   });
 } else {
   $("empty").hidden = false;
@@ -169,71 +175,121 @@ if (items.length) {
 $("apply").addEventListener("click", async () => {
   $("promoMsg").style.color = "";
   const ok = await refresh(true);
+  if (ok) schedule(true);
   if (!ok) { $("promo").value = ""; await refresh(false); $("promoMsg").style.color = "var(--err)"; $("promoMsg").textContent = "Ce code de réduction n’est pas valide."; }
 });
 
-function mountEmbed(d, v) {
-  $("f").hidden = true;
-  $("embedWrap").hidden = false;
-  $("recap").innerHTML = "";
-  const l1 = document.createElement("div"); l1.innerHTML = "<strong>Contact</strong> : "; l1.append(v.email);
-  const l2 = document.createElement("div"); l2.innerHTML = "<strong>Livraison</strong> : ";
-  l2.append(v.fn + " " + v.ln + ", " + v.a1 + (v.a2 ? " " + v.a2 : "") + ", " + v.zip + " " + v.city);
-  $("recap").append(l1, l2);
-  const box = $("embed"); box.textContent = "";
-  const el = document.createElement("div");
-  const at = {
-    "plan-id": d.plan_id, "session": d.session_id,
-    "theme": "light", "theme-accent-color": "green",
-    "hide-price": "true", "hide-email": "true", "hide-address": "true",
-    "return-url": location.origin + location.pathname + "?merci=1",
-    "prefill-email": v.email, "prefill-name": v.fn + " " + v.ln,
-    "prefill-address-country": v.cc, "prefill-address-line1": v.a1, "prefill-address-line2": v.a2,
-    "prefill-address-city": v.city, "prefill-address-postal-code": v.zip
-  };
-  Object.entries(at).forEach(([k, val]) => { if (val) el.setAttribute("data-whop-checkout-" + k, val); });
-  box.appendChild(el);
-  if (!document.querySelector('script[data-vk-loader]')) {
-    const sc = document.createElement("script");
-    sc.async = true; sc.src = "https://js.whop.com/static/checkout/loader.js"; sc.setAttribute("data-vk-loader", "1");
-    document.head.appendChild(sc);
-  }
-  window.scrollTo({ top: 0, behavior: "smooth" });
-}
-
-$("back").addEventListener("click", () => {
-  $("embedWrap").hidden = true; $("f").hidden = false;
-  $("pay").disabled = false; $("pay").textContent = "Continuer vers le paiement";
-});
-
-if (new URLSearchParams(location.search).get("merci")) {
-  $("f").hidden = true; $("empty").hidden = true; $("thanks").hidden = false;
-  document.querySelector(".right").hidden = true;
-  document.querySelector(".wrap").style.gridTemplateColumns = "1fr";
-}
-
-$("f").addEventListener("submit", async (e) => {
-  e.preventDefault();
-  $("err").textContent = "";
-  $("pay").disabled = true; $("pay").textContent = "Chargement…";
-  const v = {
+function values() {
+  return {
     email: $("email").value.trim(), fn: $("fn").value.trim(), ln: $("ln").value.trim(),
     a1: $("a1").value.trim(), a2: $("a2").value.trim(), zip: $("zip").value.trim(),
     city: $("city").value.trim(), cc: $("cc").value, tel: $("tel").value.trim()
   };
+}
+const complete = (v) => /^\S+@\S+\.\S+$/.test(v.email) && v.fn && v.ln && v.a1 && v.zip && v.city;
+
+let whopCheckout = null;
+function loadElements() {
+  return new Promise((resolve, reject) => {
+    if (window.WhopElements) return resolve();
+    let sc = document.querySelector("script[data-whop-elements]");
+    if (!sc) {
+      sc = document.createElement("script");
+      sc.src = "https://cdn.whop.com/elements/amber/elements.js";
+      sc.setAttribute("data-whop-elements", "");
+      document.head.appendChild(sc);
+    }
+    const t = setInterval(() => { if (window.WhopElements) { clearInterval(t); resolve(); } }, 100);
+    setTimeout(() => { clearInterval(t); if (!window.WhopElements) reject(new Error("elements")); }, 10000);
+  });
+}
+
+async function mountEmbed(d, v) {
+  await loadElements();
+  if (whopCheckout) { try { whopCheckout.destroy(); } catch (_) {} whopCheckout = null; }
+  const box = $("embed"); box.textContent = "";
+  const target = document.createElement("div"); target.id = "whop-target"; box.appendChild(target);
+  const base = {
+    checkoutConfiguration: d.session_id,
+    returnUrl: location.origin + location.pathname + "?merci=1"
+  };
+  const props = {
+    buyerEmail: v.email,
+    defaultValues: {
+      billingDetails: {
+        name: v.fn + " " + v.ln,
+        address: { line1: v.a1, line2: v.a2 || undefined, city: v.city, postal_code: v.zip, country: v.cc }
+      }
+    }
+  };
+  let handle;
+  try {
+    handle = window.WhopElements().checkout.create({
+      ...base,
+      appearance: { classes: { "whop-CheckoutSeller": { display: "none" }, "whop-CheckoutSellerLogo": { display: "none" } } }
+    });
+  } catch (_) {
+    handle = window.WhopElements().checkout.create(base);
+  }
+  whopCheckout = handle;
+  handle.create("checkout", props).mount("#whop-target");
+  $("payHint").textContent = "Choisissez votre moyen de paiement ci-dessous.";
+}
+
+let timer = null, seq = 0, lastKey = "";
+function schedule(force) {
+  clearTimeout(timer);
+  timer = setTimeout(() => prepare(force), 900);
+}
+async function prepare(force) {
+  const v = values();
+  const key = JSON.stringify([v, $("promo").value.trim()]);
+  if (!complete(v)) {
+    $("embed").textContent = ""; lastKey = "";
+    $("payHint").textContent = "Renseignez votre e-mail et votre adresse ci-dessus : le paiement s’affiche ici automatiquement.";
+    return;
+  }
+  if (!force && key === lastKey) return;
+  const my = ++seq;
+  $("err").textContent = "";
+  $("payHint").textContent = "Préparation du paiement…";
   try {
     const d = await call({
       email: v.email,
       shipping: { first_name: v.fn, last_name: v.ln, address1: v.a1, address2: v.a2, zip: v.zip, city: v.city, country_code: v.cc, phone: v.tel }
     });
-    if (d.plan_id && d.session_id) { mountEmbed(d, v); return; }
-    if (d.purchase_url) { location.href = d.purchase_url; return; }
-    throw new Error("Erreur");
+    if (my !== seq) return;
+    if (!(d.plan_id && d.session_id)) throw new Error("Erreur");
+    lastKey = key;
+    mountEmbed(d, v);
   } catch (err) {
-    $("err").textContent = "Le paiement n’a pas pu démarrer. Vérifiez vos informations et réessayez.";
-    $("pay").disabled = false; $("pay").textContent = "Continuer vers le paiement";
+    if (my !== seq) return;
+    $("err").textContent = "Le paiement n’a pas pu s’afficher. Vérifiez vos informations et réessayez.";
+    $("payHint").textContent = "Renseignez votre e-mail et votre adresse ci-dessus : le paiement s’affiche ici automatiquement.";
   }
+}
+["email", "fn", "ln", "a1", "a2", "zip", "city", "cc", "tel"].forEach((id) => {
+  $(id).addEventListener("input", () => schedule(false));
+  $(id).addEventListener("change", () => schedule(false));
 });
+$("f").addEventListener("submit", (e) => e.preventDefault());
+
+{
+  const q = new URLSearchParams(location.search);
+  if (q.get("merci")) {
+    const st = q.get("status");
+    $("f").hidden = true; $("empty").hidden = true; $("thanks").hidden = false;
+    document.querySelector(".right").hidden = true;
+    document.querySelector(".wrap").style.gridTemplateColumns = "1fr";
+    if (st === "failed" || st === "canceled") {
+      $("thanks").querySelector("h2").textContent = "Votre paiement n’a pas abouti";
+      $("thanks").querySelectorAll("p")[0].textContent = "Aucun montant n’a été débité. Vous pouvez réessayer depuis votre panier.";
+    } else if (st && st !== "succeeded") {
+      $("thanks").querySelector("h2").textContent = "Confirmation en cours";
+      $("thanks").querySelectorAll("p")[0].textContent = "Votre paiement est en cours de traitement. Vous recevrez un e-mail de confirmation.";
+    }
+  }
+}
 </script>
 </body>
 </html>
