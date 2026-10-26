@@ -8,62 +8,62 @@
   :root{--bg:#fff;--panel:#f5f5f5;--fg:#111;--mut:#6b6b6b;--line:#d9d9d9;--acc:#1e9e50;--err:#d93025}
   *{box-sizing:border-box}
   [hidden]{display:none!important}
-  input:-webkit-autofill,input:-webkit-autofill:focus{-webkit-text-fill-color:#111;box-shadow:0 0 0 1000px #fff inset;caret-color:#111}
-  body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.5 -apple-system,"Helvetica Neue",Arial,sans-serif}
+  body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.5 -apple-system,"Helvetica Neue",Arial,sans-serif}
   .wrap{display:grid;grid-template-columns:1fr 1fr;min-height:100vh}
-  .left{padding:40px 48px;max-width:620px;justify-self:end;width:100%}
+  .left{padding:36px 48px 64px;max-width:640px;justify-self:end;width:100%}
   .right{background:var(--panel);border-left:1px solid var(--line);padding:40px 48px}
   .right>div{max-width:440px}
-  h1{font-size:20px;letter-spacing:.1em;margin:0 0 28px}
-  h2{font-size:18px;margin:28px 0 12px}
-  input,select{width:100%;padding:14px;background:#fff;color:var(--fg);border:1px solid var(--line);border-radius:8px;font:inherit;margin-bottom:12px}
+  .brand{font-size:20px;font-weight:800;letter-spacing:.12em;margin:0 0 24px}
+  h2{font-size:18px;font-weight:600;margin:28px 0 12px}
+  input,select{width:100%;height:50px;padding:0 14px;background:#fff;color:var(--fg);border:1px solid var(--line);border-radius:8px;font:inherit;margin-bottom:12px;-webkit-appearance:none;appearance:none}
+  select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%23666' stroke-width='1.6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 16px center;padding-right:40px}
   input::placeholder{color:#8a8a8a}
-  input:focus,select:focus,button:focus-visible{outline:2px solid var(--acc);outline-offset:1px}
+  input:-webkit-autofill{-webkit-text-fill-color:#111;box-shadow:0 0 0 1000px #fff inset}
+  input:focus,select:focus{outline:2px solid var(--acc);outline-offset:0;border-color:var(--acc)}
   .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-  .pay-box{border:1px solid var(--line);border-radius:8px;padding:14px;color:var(--mut);font-size:14px}
-  .go{width:100%;margin-top:20px;padding:16px;background:var(--acc);color:#fff;border:0;border-radius:8px;font:inherit;font-weight:700;font-size:17px;cursor:pointer}
-  .go:disabled{opacity:.5;cursor:wait}
-  #err{color:var(--err);min-height:1.5em;margin-top:12px}
+  .ship{display:flex;justify-content:space-between;align-items:center;gap:12px;border:1.5px solid var(--acc);background:#f2faf5;border-radius:8px;padding:14px 16px}
+  .ship small{display:block;color:var(--mut)}
+  .ship b{white-space:nowrap}
+  .trust{display:flex;flex-wrap:wrap;gap:6px 18px;color:var(--mut);font-size:13px;margin-top:14px}
+  .trust span:before{content:"✓ ";color:var(--acc);font-weight:700}
+  #embedBox{position:relative;min-height:260px;margin-top:4px}
+  #embed.locked{filter:blur(3px);pointer-events:none;user-select:none}
+  .lock{position:absolute;inset:0;background:rgba(255,255,255,.72);display:flex;align-items:center;justify-content:center;text-align:center;padding:16px;font-weight:600;z-index:5;border-radius:8px}
+  #err{color:var(--err);min-height:1.5em;margin-top:8px}
   .line{display:flex;gap:14px;align-items:center;margin-bottom:16px}
   .thumb{position:relative;width:64px;height:64px;flex:none;border:1px solid var(--line);border-radius:8px;background:#fff}
   .thumb img{width:100%;height:100%;object-fit:cover;border-radius:8px;display:block}
   .qty{position:absolute;top:-8px;right:-8px;min-width:22px;height:22px;border-radius:11px;background:#333;color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center}
   .nm{flex:1}.nm small{display:block;color:var(--mut)}
-  .promo{display:flex;gap:10px;margin:20px 0}
+  .promo{display:flex;gap:10px;margin:20px 0 8px}
   .promo input{margin:0}
-  .promo button{padding:0 18px;background:#ececec;color:#111;border:1px solid var(--line);border-radius:8px;font:inherit;cursor:pointer}
-  .sum{display:flex;justify-content:space-between;margin:8px 0;color:var(--mut)}
-  .sum.big{color:var(--fg);font-size:20px;font-weight:700;margin-top:16px}
+  .promo button{padding:0 20px;background:#e9e9e9;color:#111;border:1px solid var(--line);border-radius:8px;font:inherit;cursor:pointer}
+  .sum{display:flex;justify-content:space-between;margin:8px 0;color:#444}
+  .sum.big{color:var(--fg);font-size:22px;font-weight:700;margin-top:16px;align-items:baseline}
+  .sum.big small{font-size:12px;font-weight:400;color:var(--mut);margin-right:6px}
   .ok{color:var(--acc)}
-  .pay-note{color:var(--mut);font-size:14px;margin-bottom:12px}
-  #embedBox{position:relative;min-height:240px}
-  .lock{position:absolute;inset:0;background:rgba(255,255,255,.82);display:flex;align-items:center;justify-content:center;text-align:center;padding:16px;font-weight:600;z-index:5;border-radius:8px}
-  .methods{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
-  .methods span{border:1px solid var(--line);border-radius:6px;padding:6px 10px;font-size:13px;color:#111;background:#fff}
-  #embedWrap{margin-top:8px}
-  .recap{border:1px solid var(--line);border-radius:8px;padding:14px;color:var(--mut);font-size:14px;margin-bottom:16px}
-  .recap strong{color:#111}
-  .link{background:none;border:0;color:#111;text-decoration:underline;cursor:pointer;font:inherit;padding:0;margin-top:8px}
   #thanks{text-align:center;padding:64px 0}
   #thanks h2{font-size:24px}
-  @media(max-width:800px){.wrap{grid-template-columns:1fr}.right{order:-1;border-left:0;border-bottom:1px solid var(--line);padding:24px 20px}.left{padding:24px 20px;justify-self:stretch}}
+  .foot{margin-top:28px;padding-top:16px;border-top:1px solid var(--line);font-size:13px;color:var(--mut);display:flex;flex-wrap:wrap;gap:6px 18px}
+  .foot a{color:var(--mut)}
+  @media(max-width:800px){.wrap{grid-template-columns:1fr}.right{order:-1;border-left:0;border-bottom:1px solid var(--line);padding:24px 20px}.left{padding:24px 20px 56px;justify-self:stretch}}
 </style>
 </head>
 <body>
 <div class="wrap">
   <main class="left">
-    <h1>VICTORY KITS</h1>
+    <div class="brand">VICTORY KITS</div>
     <form id="f" hidden>
-      <h2>Contact</h2>
+      <h2 style="margin-top:0">Contact</h2>
       <input id="email" type="email" placeholder="Adresse e-mail" autocomplete="email" required>
-
       <h2>Livraison</h2>
-      <select id="cc" autocomplete="country" aria-label="Pays">
+      <select id="cc" autocomplete="country" aria-label="Pays/région">
         <option value="FR">France</option><option value="BE">Belgique</option>
-        <option value="CH">Suisse</option><option value="LU">Luxembourg</option>
-        <option value="DE">Allemagne</option><option value="ES">Espagne</option>
-        <option value="IT">Italie</option><option value="NL">Pays-Bas</option>
-        <option value="PT">Portugal</option><option value="GB">Royaume-Uni</option>
+        <option value="CH">Suisse</option><option value="DE">Allemagne</option>
+        <option value="DK">Danemark</option><option value="ES">Espagne</option>
+        <option value="FI">Finlande</option><option value="IT">Italie</option>
+        <option value="AD">Andorre</option><option value="MT">Malte</option>
+        <option value="MC">Monaco</option><option value="AE">Émirats arabes unis</option>
       </select>
       <div class="row">
         <input id="fn" placeholder="Prénom" autocomplete="given-name" required>
@@ -76,14 +76,16 @@
         <input id="city" placeholder="Ville" autocomplete="address-level2" required>
       </div>
       <input id="tel" type="tel" placeholder="Téléphone (facultatif)" autocomplete="tel">
-
+      <h2>Mode d’expédition</h2>
+      <div class="ship"><div><b>LIVRAISON OFFERTE</b><small>Aucun frais de livraison sur votre commande</small></div><b>Gratuit</b></div>
       <h2>Paiement</h2>
-      <div class="pay-note">Toutes les transactions sont sécurisées et chiffrées.</div>
+      <div style="color:var(--mut);margin:-4px 0 12px">Toutes les transactions sont sécurisées et chiffrées.</div>
       <div id="embedBox">
-        <div id="embed"></div>
+        <div id="embed" class="locked"></div>
         <div id="lock" class="lock"><span id="lockMsg">Chargement du paiement…</span></div>
       </div>
       <div id="err" role="alert"></div>
+      <div class="trust"><span>Paiement 100 % sécurisé</span><span>Livraison offerte</span></div>
     </form>
     <section id="thanks" hidden>
       <h2>Merci pour votre commande !</h2>
@@ -91,8 +93,14 @@
       <p><a href="https://victorykits.fr" style="color:#111">Retourner à la boutique</a></p>
     </section>
     <p id="empty" hidden>Votre panier est vide. <a href="https://victorykits.fr" style="color:#111">Retourner à la boutique</a></p>
+    <div class="foot">
+      <a href="https://victorykits.fr">Retour à la boutique</a>
+      <a href="https://victorykits.fr/policies/refund-policy" target="_blank" rel="noopener">Politique de remboursement</a>
+      <a href="https://victorykits.fr/policies/shipping-policy" target="_blank" rel="noopener">Politique d’expédition</a>
+      <a href="https://victorykits.fr/policies/privacy-policy" target="_blank" rel="noopener">Confidentialité</a>
+      <a href="https://victorykits.fr/policies/terms-of-service" target="_blank" rel="noopener">Conditions d’utilisation</a>
+    </div>
   </main>
-
   <aside class="right"><div>
     <div id="lines"></div>
     <div class="promo">
@@ -102,30 +110,26 @@
     <div id="promoMsg" class="sum"></div>
     <div class="sum"><span id="subLabel">Sous-total</span><span id="sub">–</span></div>
     <div class="sum ok" id="discRow" hidden><span id="discLabel">Réduction</span><span id="disc"></span></div>
-    <div class="sum big"><span>Total</span><span id="total">–</span></div>
+    <div class="sum"><span>Expédition</span><span class="ok">Gratuite</span></div>
+    <div class="sum big"><span>Total</span><span><small>EUR</small><span id="total">–</span></span></div>
   </div></aside>
 </div>
-
 <script>
 const API = "https://uylduzmyvkbkxzwnhsgh.supabase.co/functions/v1/create-checkout";
 const $ = (id) => document.getElementById(id);
 const eur = (n) => Number(n).toFixed(2).replace(".", ",") + " €";
-
 let items = [];
 try {
   const raw = decodeURIComponent(location.hash.replace(/^#cart=/, ""));
-  const bin = atob(raw);
-  const txt = new TextDecoder().decode(Uint8Array.from(bin, (c) => c.charCodeAt(0)));
+  const txt = new TextDecoder().decode(Uint8Array.from(atob(raw), (c) => c.charCodeAt(0)));
   items = JSON.parse(txt).map(([v, q, p]) => ({ variant_id: v, quantity: q, properties: p || {} }));
 } catch (e) { items = []; }
-
 async function call(extra) {
   const r = await fetch(API, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ items, discount_code: $("promo").value.trim(), ...extra }) });
   const d = await r.json();
   if (!r.ok) throw new Error(d.error || "Erreur");
   return d;
 }
-
 function render(d) {
   const box = $("lines"); box.textContent = "";
   const isFlo = (l) => /flocage/i.test(l.title || "");
@@ -145,13 +149,12 @@ function render(d) {
   main.forEach((l) => {
     n += l.quantity;
     const sub = [];
-    if (l.variant) sub.push(l.variant);
+    if (l.variant) sub.push("Taille : " + l.variant);
     Object.entries(l.properties || {}).filter(([k]) => !k.startsWith("_")).forEach(([k, val]) => sub.push(k + " : " + val));
     row(l.image, l.quantity, l.title, sub, l.price * l.quantity);
   });
   if (flo.length) {
-    const fq = flo.reduce((t, l) => t + l.quantity, 0);
-    row(null, fq, "Flocage personnalisé", [], flo.reduce((t, l) => t + l.price * l.quantity, 0));
+    row(null, flo.reduce((t, l) => t + l.quantity, 0), "Flocage personnalisé", [], flo.reduce((t, l) => t + l.price * l.quantity, 0));
   }
   $("subLabel").textContent = "Sous-total · " + n + (n > 1 ? " articles" : " article");
   $("sub").textContent = eur(d.subtotal);
@@ -159,32 +162,23 @@ function render(d) {
   if (d.discount) { $("discLabel").textContent = "Réduction (" + d.discount_code + ")"; $("disc").textContent = "−" + eur(d.discount); }
   $("total").textContent = eur(d.total);
 }
-
 async function refresh(showPromo) {
-  $("promoMsg").textContent = "";
-  try { render(await call({ preview: true })); if (showPromo && $("promo").value.trim()) { $("promoMsg").textContent = "Code appliqué"; $("promoMsg").className = "sum ok"; } return true; }
-  catch (e) { $("promoMsg").className = "sum"; $("promoMsg").style.color = "var(--err)"; $("promoMsg").textContent = e.message === "code promo invalide" ? "Ce code de réduction n’est pas valide." : "Impossible de charger le panier."; return false; }
+  $("promoMsg").textContent = ""; $("promoMsg").className = "sum"; $("promoMsg").style.color = "";
+  try {
+    render(await call({ preview: true }));
+    if (showPromo && $("promo").value.trim()) { $("promoMsg").textContent = "Code appliqué"; $("promoMsg").className = "sum ok"; }
+    return true;
+  } catch (e) {
+    $("promoMsg").style.color = "var(--err)";
+    $("promoMsg").textContent = e.message === "code promo invalide" ? "Ce code de réduction n’est pas valide." : "Impossible de charger le panier.";
+    return false;
+  }
 }
-
-if (items.length) {
-  $("f").hidden = false;
-  const pre = new URLSearchParams(location.search).get("code");
-  if (pre) $("promo").value = pre;
-  refresh(!!pre).then(async (ok) => {
-    if (!ok && pre) { $("promo").value = ""; $("promoMsg").textContent = ""; ok = await refresh(false); }
-    schedule();
-  });
-} else {
-  $("empty").hidden = false;
-}
-
 $("apply").addEventListener("click", async () => {
-  $("promoMsg").style.color = "";
   const ok = await refresh(true);
-  if (ok) schedule(true);
   if (!ok) { $("promo").value = ""; await refresh(false); $("promoMsg").style.color = "var(--err)"; $("promoMsg").textContent = "Ce code de réduction n’est pas valide."; }
+  schedule(true);
 });
-
 function values() {
   return {
     email: $("email").value.trim(), fn: $("fn").value.trim(), ln: $("ln").value.trim(),
@@ -194,20 +188,17 @@ function values() {
 }
 const complete = (v) => /^\S+@\S+\.\S+$/.test(v.email) && v.fn && v.ln && v.a1 && v.zip && v.city;
 const MSG_FILL = "Renseignez votre e-mail et votre adresse pour régler votre commande.";
-
 function lock(on, msg) {
   $("lock").hidden = !on;
+  $("embed").classList.toggle("locked", on);
   if (msg) $("lockMsg").textContent = msg;
 }
-
 let whopCheckout = null, whopEl = null, pending = null, saved = "", timer = null, initSeq = 0;
-
 function loadElements() {
   return new Promise((resolve, reject) => {
     if (window.WhopElements) return resolve();
-    let sc = document.querySelector("script[data-whop-elements]");
-    if (!sc) {
-      sc = document.createElement("script");
+    if (!document.querySelector("script[data-whop-elements]")) {
+      const sc = document.createElement("script");
       sc.src = "https://cdn.whop.com/elements/amber/elements.js";
       sc.setAttribute("data-whop-elements", "");
       document.head.appendChild(sc);
@@ -216,31 +207,28 @@ function loadElements() {
     setTimeout(() => { clearInterval(t); if (!window.WhopElements) reject(new Error("elements")); }, 10000);
   });
 }
-
 async function mountEmbed(d) {
   await loadElements();
   if (whopCheckout) { try { whopCheckout.destroy(); } catch (_) {} whopCheckout = null; whopEl = null; }
   const box = $("embed"); box.textContent = "";
   const target = document.createElement("div"); target.id = "whop-target"; box.appendChild(target);
-  const base = {
-    checkoutConfiguration: d.session_id,
-    returnUrl: location.origin + location.pathname + "?merci=1"
-  };
-  let handle;
-  try {
-    handle = window.WhopElements().checkout.create({
-      ...base,
-      appearance: { classes: { "whop-CheckoutSeller": { display: "none" }, "whop-CheckoutSellerLogo": { display: "none" } } }
-    });
-  } catch (_) {
-    handle = window.WhopElements().checkout.create(base);
-  }
+  const base = { checkoutConfiguration: d.session_id, returnUrl: location.origin + location.pathname + "?merci=1" };
+  const hide = { display: "none", visibility: "hidden", maxHeight: "0px", overflow: "hidden", margin: "0px", padding: "0px" };
+  const pay = { backgroundColor: "#1e9e50", color: "#ffffff", borderRadius: "10px", fontWeight: "700" };
+  const attempts = [
+    { ...base, locale: "fr", appearance: { classes: {
+      "whop-CheckoutDetails": hide, "whop-CheckoutSummary": hide, "whop-CheckoutSummaryHead": hide,
+      "whop-CheckoutSeller": hide, "whop-CheckoutSellerLogo": hide, "whop-CheckoutPayButton": pay } } },
+    { ...base, locale: "fr" },
+    base
+  ];
+  let handle = null;
+  for (const opt of attempts) { try { handle = window.WhopElements().checkout.create(opt); break; } catch (_) {} }
+  if (!handle) throw new Error("create");
   whopCheckout = handle;
   whopEl = handle.create("checkout", {});
   whopEl.mount("#whop-target");
 }
-
-// 1) crée le paiement dès l'ouverture de la page (montant exact, code promo compris)
 async function initPayment() {
   const my = ++initSeq;
   pending = null; saved = "";
@@ -261,8 +249,6 @@ async function initPayment() {
     lock(true, "Paiement indisponible pour le moment.");
   }
 }
-
-// 2) dès que l'e-mail et l'adresse sont complets, on les enregistre puis on débloque le paiement
 async function trySave() {
   if (!pending) return;
   const v = values();
@@ -290,8 +276,6 @@ async function trySave() {
     lock(true, "Vos informations n’ont pas pu être enregistrées. Vérifiez-les.");
   }
 }
-
-// force = true : le total a changé (code promo) -> nouveau paiement
 function schedule(force) {
   clearTimeout(timer);
   timer = setTimeout(() => { (force || !pending) ? initPayment() : trySave(); }, force ? 100 : 600);
@@ -301,12 +285,11 @@ function schedule(force) {
   $(id).addEventListener("change", () => schedule(false));
 });
 $("f").addEventListener("submit", (e) => e.preventDefault());
-
 {
   const q = new URLSearchParams(location.search);
   if (q.get("merci")) {
     const st = q.get("status");
-    $("f").hidden = true; $("empty").hidden = true; $("thanks").hidden = false;
+    $("empty").hidden = true; $("thanks").hidden = false;
     document.querySelector(".right").hidden = true;
     document.querySelector(".wrap").style.gridTemplateColumns = "1fr";
     if (st === "failed" || st === "canceled") {
@@ -316,6 +299,16 @@ $("f").addEventListener("submit", (e) => e.preventDefault());
       $("thanks").querySelector("h2").textContent = "Confirmation en cours";
       $("thanks").querySelectorAll("p")[0].textContent = "Votre paiement est en cours de traitement. Vous recevrez un e-mail de confirmation.";
     }
+  } else if (items.length) {
+    $("f").hidden = false;
+    const pre = q.get("code");
+    if (pre) $("promo").value = pre;
+    refresh(!!pre).then(async (ok) => {
+      if (!ok && pre) { $("promo").value = ""; $("promoMsg").textContent = ""; ok = await refresh(false); }
+      schedule();
+    });
+  } else {
+    $("empty").hidden = false;
   }
 }
 </script>
