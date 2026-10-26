@@ -36,12 +36,14 @@
   #embedBox{position:relative;min-height:120px}
   #loadNote{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--mut);pointer-events:none}
   #gate{position:absolute;left:0;right:0;z-index:5;background:transparent;cursor:pointer;-webkit-tap-highlight-color:transparent}
-  #gate.card{bottom:0;height:80px}
+  #gate.card{bottom:0;height:64px}
   #gate.wallet{top:0;bottom:0}
   #walletNote{color:var(--mut);margin:6px 0}
   #err{color:var(--err);min-height:1.5em;margin-top:8px}
   .trust{display:flex;flex-wrap:wrap;gap:6px 18px;color:var(--mut);font-size:13px;margin-top:14px}
   .trust span:before{content:"✓ ";color:var(--acc);font-weight:700}
+  .legal{margin:14px 0 0;font-size:13px;color:var(--mut)}
+  .legal a{color:var(--mut)}
   .line{display:flex;gap:14px;align-items:center;margin-bottom:16px}
   .thumb{position:relative;width:64px;height:64px;flex:none;border:1px solid var(--line);border-radius:8px;background:#fff}
   .thumb img{width:100%;height:100%;object-fit:cover;border-radius:8px;display:block}
@@ -108,6 +110,7 @@
       <div id="walletNote" role="status"></div>
       <div id="err" role="alert"></div>
       <div class="trust"><span>Paiement 100 % sécurisé</span><span>Livraison offerte</span></div>
+      <p class="legal">En payant, vous acceptez nos <a href="https://victorykits.fr/policies/terms-of-service" target="_blank" rel="noopener">conditions d’utilisation</a> et notre <a href="https://victorykits.fr/policies/privacy-policy" target="_blank" rel="noopener">politique de confidentialité</a>.</p>
     </form>
     <section id="thanks" hidden>
       <h2>Merci pour votre commande !</h2>
@@ -230,7 +233,7 @@ function prefill(v) {
 /* ---------- Paiement Whop (intégré, sans quitter la page) ---------- */
 const IS_APPLE = !!window.ApplePaySession;
 $("walletName").textContent = IS_APPLE ? "Apple Pay" : "Google Pay";
-let method = "card", handle = null, el = null, session = null, pending = null, saved = "", timer = null, initSeq = 0, walletTimer = null;
+let touched = false, method = "card", handle = null, el = null, session = null, pending = null, saved = "", timer = null, initSeq = 0, walletTimer = null;
 
 function loadElements() {
   return new Promise((resolve, reject) => {
@@ -277,6 +280,8 @@ function buildHandle() {
     "whop-CheckoutSeller": hide, "whop-CheckoutSellerLogo": hide,
     "whop-CheckoutCompanyPurchase": hide, "whop-CheckoutCompanyPurchaseCheckbox": hide,
     "whop-CheckoutPromoRow": hide,
+    "whop-CheckoutTerms": hide, "whop-CheckoutPolicyLink": hide,
+    "whop-PaymentBillingBlock": hide, "whop-Address": hide, "whop-AddressManualEntry": hide,
     "whop-CheckoutExpress": hide, "whop-CheckoutExpressButtons": hide, "whop-CheckoutExpressDivider": hide,
     "whop-CheckoutPayButton": { backgroundColor: "#1e9e50", color: "#ffffff", borderRadius: "10px", fontWeight: "700" }
   };
@@ -299,6 +304,7 @@ function buildHandle() {
 function mountMethod() {
   if (!session) return;
   destroyAll();
+  touched = false;
   $("walletNote").textContent = "";
   $("loadNote").hidden = false;
   const target = document.createElement("div"); target.id = "whop-target"; $("embed").appendChild(target);
@@ -362,7 +368,12 @@ async function trySave() {
     if (pid !== pending) return;
     saved = key;
     if (key === JSON.stringify(values())) { setGate(false); $("err").textContent = ""; }
-    if (el && method === "card") { try { el.update(prefill(v)); } catch (_) {} }
+    if (el && method === "card") {
+      // Les infos de facturation sont masquées : on les fournit dès la création du bloc carte.
+      // Si le client n'a pas encore touché à la carte, on recrée le bloc avec ses infos.
+      if (!touched) mountMethod();
+      else { try { el.update(prefill(v)); } catch (_) {} }
+    }
   } catch (err) {
     $("err").textContent = "Vos informations n’ont pas pu être enregistrées. Vérifiez-les.";
   }
@@ -371,6 +382,11 @@ function schedule(force) {
   clearTimeout(timer);
   timer = setTimeout(() => { (force || !pending) ? initPayment() : trySave(); }, force ? 100 : 600);
 }
+
+window.addEventListener("blur", () => setTimeout(() => {
+  const a = document.activeElement;
+  if (a && a.tagName === "IFRAME" && $("embed").contains(a)) touched = true;
+}, 0));
 
 /* Appui sur la zone de paiement alors que l'e-mail / l'adresse manquent */
 $("gate").addEventListener("click", () => {
