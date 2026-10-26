@@ -20,16 +20,28 @@
   input::placeholder{color:#8a8a8a}
   input:-webkit-autofill{-webkit-text-fill-color:#111;box-shadow:0 0 0 1000px #fff inset}
   input:focus,select:focus{outline:2px solid var(--acc);outline-offset:0;border-color:var(--acc)}
+  input.bad,select.bad{border-color:var(--err);outline:1px solid var(--err)}
   .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
   .ship{display:flex;justify-content:space-between;align-items:center;gap:12px;border:1.5px solid var(--acc);background:#f2faf5;border-radius:8px;padding:14px 16px}
   .ship small{display:block;color:var(--mut)}
   .ship b{white-space:nowrap}
+  .sub-h{color:var(--mut);margin:-4px 0 14px}
+  .tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:0 0 14px}
+  .tile{display:flex;flex-direction:column;justify-content:center;align-items:flex-start;gap:10px;min-height:88px;padding:12px 14px;background:#fff;border:1.5px solid var(--line);border-radius:10px;font:inherit;font-weight:600;color:var(--fg);text-align:left;cursor:pointer;-webkit-appearance:none;appearance:none}
+  .tile:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+  .tile[aria-pressed="true"]{border-color:var(--acc);background:#f2faf5;box-shadow:0 0 0 1px var(--acc) inset}
+  .tile svg{width:40px;height:28px;display:block}
+  .tile .word{font-size:19px;font-weight:800;letter-spacing:-.01em}
+  .tile .lab{font-size:14px}
+  #embedBox{position:relative;min-height:120px}
+  #loadNote{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--mut);pointer-events:none}
+  #gate{position:absolute;left:0;right:0;z-index:5;background:transparent;cursor:pointer;-webkit-tap-highlight-color:transparent}
+  #gate.card{bottom:0;height:80px}
+  #gate.wallet{top:0;bottom:0}
+  #walletNote{color:var(--mut);margin:6px 0}
+  #err{color:var(--err);min-height:1.5em;margin-top:8px}
   .trust{display:flex;flex-wrap:wrap;gap:6px 18px;color:var(--mut);font-size:13px;margin-top:14px}
   .trust span:before{content:"✓ ";color:var(--acc);font-weight:700}
-  #embedBox{position:relative;min-height:260px;margin-top:4px}
-  #embed.locked{filter:blur(3px);pointer-events:none;user-select:none}
-  .lock{position:absolute;inset:0;background:rgba(255,255,255,.72);display:flex;align-items:center;justify-content:center;text-align:center;padding:16px;font-weight:600;z-index:5;border-radius:8px}
-  #err{color:var(--err);min-height:1.5em;margin-top:8px}
   .line{display:flex;gap:14px;align-items:center;margin-bottom:16px}
   .thumb{position:relative;width:64px;height:64px;flex:none;border:1px solid var(--line);border-radius:8px;background:#fff}
   .thumb img{width:100%;height:100%;object-fit:cover;border-radius:8px;display:block}
@@ -46,7 +58,7 @@
   #thanks h2{font-size:24px}
   .foot{margin-top:28px;padding-top:16px;border-top:1px solid var(--line);font-size:13px;color:var(--mut);display:flex;flex-wrap:wrap;gap:6px 18px}
   .foot a{color:var(--mut)}
-  @media(max-width:800px){.wrap{grid-template-columns:1fr}.right{order:-1;border-left:0;border-bottom:1px solid var(--line);padding:24px 20px}.left{padding:24px 20px 56px;justify-self:stretch}}
+  @media(max-width:800px){.wrap{grid-template-columns:1fr}.right{order:-1;border-left:0;border-bottom:1px solid var(--line);padding:24px 20px}.left{padding:24px 20px 56px;justify-self:stretch}.tile{min-height:80px;padding:10px}.tile .word{font-size:16px}.tile .lab{font-size:13px}}
 </style>
 </head>
 <body>
@@ -79,11 +91,21 @@
       <h2>Mode d’expédition</h2>
       <div class="ship"><div><b>LIVRAISON OFFERTE</b><small>Aucun frais de livraison sur votre commande</small></div><b>Gratuit</b></div>
       <h2>Paiement</h2>
-      <div style="color:var(--mut);margin:-4px 0 12px">Toutes les transactions sont sécurisées et chiffrées.</div>
-      <div id="embedBox">
-        <div id="embed" class="locked"></div>
-        <div id="lock" class="lock"><span id="lockMsg">Chargement du paiement…</span></div>
+      <div class="sub-h">Toutes les transactions sont sécurisées et chiffrées.</div>
+      <div class="tiles" role="group" aria-label="Moyen de paiement">
+        <button type="button" class="tile" data-m="card" aria-pressed="true">
+          <svg viewBox="0 0 40 28" aria-hidden="true"><rect x="1" y="1" width="38" height="26" rx="4" fill="#fff" stroke="#8a8a8a" stroke-width="2"/><rect x="1" y="7" width="38" height="6" fill="#8a8a8a"/><rect x="5" y="19" width="12" height="3" rx="1.5" fill="#bdbdbd"/></svg>
+          <span class="lab">Carte de crédit</span>
+        </button>
+        <button type="button" class="tile" data-m="wallet" aria-pressed="false"><span class="word" id="walletName">Apple Pay</span></button>
+        <button type="button" class="tile" data-m="paypal" aria-pressed="false"><span class="word">PayPal</span></button>
       </div>
+      <div id="embedBox">
+        <div id="loadNote">Chargement du paiement…</div>
+        <div id="embed"></div>
+        <div id="gate" class="card" hidden></div>
+      </div>
+      <div id="walletNote" role="status"></div>
       <div id="err" role="alert"></div>
       <div class="trust"><span>Paiement 100 % sécurisé</span><span>Livraison offerte</span></div>
     </form>
@@ -118,6 +140,7 @@
 const API = "https://uylduzmyvkbkxzwnhsgh.supabase.co/functions/v1/create-checkout";
 const $ = (id) => document.getElementById(id);
 const eur = (n) => Number(n).toFixed(2).replace(".", ",") + " €";
+const RETURN = location.origin + location.pathname + "?merci=1";
 let items = [];
 try {
   const raw = decodeURIComponent(location.hash.replace(/^#cart=/, ""));
@@ -130,6 +153,8 @@ async function call(extra) {
   if (!r.ok) throw new Error(d.error || "Erreur");
   return d;
 }
+
+/* ---------- Récapitulatif de commande ---------- */
 function render(d) {
   const box = $("lines"); box.textContent = "";
   const isFlo = (l) => /flocage/i.test(l.title || "");
@@ -179,6 +204,8 @@ $("apply").addEventListener("click", async () => {
   if (!ok) { $("promo").value = ""; await refresh(false); $("promoMsg").style.color = "var(--err)"; $("promoMsg").textContent = "Ce code de réduction n’est pas valide."; }
   schedule(true);
 });
+
+/* ---------- Coordonnées ---------- */
 function values() {
   return {
     email: $("email").value.trim(), fn: $("fn").value.trim(), ln: $("ln").value.trim(),
@@ -186,14 +213,25 @@ function values() {
     city: $("city").value.trim(), cc: $("cc").value, tel: $("tel").value.trim()
   };
 }
-const complete = (v) => /^\S+@\S+\.\S+$/.test(v.email) && v.fn && v.ln && v.a1 && v.zip && v.city;
-const MSG_FILL = "Renseignez votre e-mail et votre adresse pour régler votre commande.";
-function lock(on, msg) {
-  $("lock").hidden = !on;
-  $("embed").classList.toggle("locked", on);
-  if (msg) $("lockMsg").textContent = msg;
+const firstMissing = (v) => {
+  if (!/^\S+@\S+\.\S+$/.test(v.email)) return "email";
+  return ["fn", "ln", "a1", "zip", "city"].find((k) => !v[k]) || null;
+};
+const complete = (v) => !firstMissing(v);
+function prefill(v) {
+  if (!/^\S+@\S+\.\S+$/.test(v.email)) return {};
+  const p = { buyerEmail: v.email };
+  if (v.fn && v.a1) {
+    p.defaultValues = { billingDetails: { name: (v.fn + " " + v.ln).trim(), address: { line1: v.a1, line2: v.a2 || undefined, city: v.city, postal_code: v.zip, country: v.cc } } };
+  }
+  return p;
 }
-let whopCheckout = null, whopEl = null, pending = null, saved = "", timer = null, initSeq = 0;
+
+/* ---------- Paiement Whop (intégré, sans quitter la page) ---------- */
+const IS_APPLE = !!window.ApplePaySession;
+$("walletName").textContent = IS_APPLE ? "Apple Pay" : "Google Pay";
+let method = "card", handle = null, el = null, session = null, pending = null, saved = "", timer = null, initSeq = 0, walletTimer = null;
+
 function loadElements() {
   return new Promise((resolve, reject) => {
     if (window.WhopElements) return resolve();
@@ -207,55 +245,114 @@ function loadElements() {
     setTimeout(() => { clearInterval(t); if (!window.WhopElements) reject(new Error("elements")); }, 10000);
   });
 }
-async function mountEmbed(d) {
-  await loadElements();
-  if (whopCheckout) { try { whopCheckout.destroy(); } catch (_) {} whopCheckout = null; whopEl = null; }
-  const box = $("embed"); box.textContent = "";
-  const target = document.createElement("div"); target.id = "whop-target"; box.appendChild(target);
-  const base = { checkoutConfiguration: d.session_id, returnUrl: location.origin + location.pathname + "?merci=1" };
+function destroyAll() {
+  clearTimeout(walletTimer);
+  if (el) { try { el.destroy(); } catch (_) {} el = null; }
+  if (handle) { try { handle.destroy(); } catch (_) {} handle = null; }
+  $("embed").textContent = "";
+}
+function setGate(on) {
+  const g = $("gate");
+  g.className = method === "card" ? "card" : "wallet";
+  g.hidden = !on;
+}
+function walletUnavailable() {
+  const name = method === "paypal" ? "PayPal" : $("walletName").textContent;
+  $("walletNote").textContent = name + " n’est pas disponible pour le moment. Choisissez la carte de crédit.";
+  $("gate").hidden = true;
+}
+function checkWallet(delay) {
+  if (method === "card") return;
+  clearTimeout(walletTimer);
+  walletTimer = setTimeout(() => {
+    const t = $("whop-target");
+    if (t && t.getBoundingClientRect().height < 24) walletUnavailable();
+  }, delay);
+}
+function buildHandle() {
+  const base = { checkoutConfiguration: session.session_id, returnUrl: RETURN };
   const hide = { display: "none", visibility: "hidden", maxHeight: "0px", overflow: "hidden", margin: "0px", padding: "0px" };
-  const pay = { backgroundColor: "#1e9e50", color: "#ffffff", borderRadius: "10px", fontWeight: "700" };
-  const attempts = [
-    { ...base, locale: "fr", appearance: { classes: {
-      "whop-CheckoutDetails": hide, "whop-CheckoutSummary": hide, "whop-CheckoutSummaryHead": hide,
-      "whop-CheckoutSeller": hide, "whop-CheckoutSellerLogo": hide, "whop-CheckoutPayButton": pay } } },
-    { ...base, locale: "fr" },
-    base
-  ];
-  let handle = null;
-  for (const opt of attempts) { try { handle = window.WhopElements().checkout.create(opt); break; } catch (_) {} }
-  if (!handle) throw new Error("create");
-  whopCheckout = handle;
-  whopEl = handle.create("checkout", {});
-  whopEl.mount("#whop-target");
+  const cardClasses = {
+    "whop-CheckoutDetails": hide, "whop-CheckoutSummary": hide, "whop-CheckoutSummaryHead": hide,
+    "whop-CheckoutSeller": hide, "whop-CheckoutSellerLogo": hide,
+    "whop-CheckoutCompanyPurchase": hide, "whop-CheckoutCompanyPurchaseCheckbox": hide,
+    "whop-CheckoutPromoRow": hide,
+    "whop-CheckoutExpress": hide, "whop-CheckoutExpressButtons": hide, "whop-CheckoutExpressDivider": hide,
+    "whop-CheckoutPayButton": { backgroundColor: "#1e9e50", color: "#ffffff", borderRadius: "10px", fontWeight: "700" }
+  };
+  const done = () => showThanks();
+  const attempts = method === "card"
+    ? [
+        { ...base, locale: "fr", onComplete: done, appearance: { classes: cardClasses } },
+        { ...base, locale: "fr", appearance: { classes: cardClasses } },
+        { ...base, locale: "fr" },
+        base
+      ]
+    : [
+        { ...base, locale: "fr", onComplete: done },
+        { ...base, locale: "fr" },
+        base
+      ];
+  for (const opt of attempts) { try { return window.WhopElements().checkout.create(opt); } catch (_) {} }
+  throw new Error("create");
+}
+function mountMethod() {
+  if (!session) return;
+  destroyAll();
+  $("walletNote").textContent = "";
+  $("loadNote").hidden = false;
+  const target = document.createElement("div"); target.id = "whop-target"; $("embed").appendChild(target);
+  setGate(true);
+  try {
+    handle = buildHandle();
+    const ready = () => { $("loadNote").hidden = true; checkWallet(700); };
+    const fail = () => { if (method !== "card") walletUnavailable(); };
+    const wallets = method === "paypal"
+      ? { applePay: "never", googlePay: "never", payPal: "auto" }
+      : (IS_APPLE ? { applePay: "auto", googlePay: "never", payPal: "never" } : { applePay: "never", googlePay: "auto", payPal: "never" });
+    const type = method === "card" ? "checkout" : "expressCheckout";
+    const props = method === "card" ? { ...prefill(values()) } : { wallets };
+    try { el = handle.create(type, { ...props, onReady: ready, onError: fail }); }
+    catch (_) { el = handle.create(type, props); }
+    el.mount("#whop-target");
+    setTimeout(() => { $("loadNote").hidden = true; }, 6000);
+    checkWallet(4000);
+    refreshGate();
+  } catch (err) {
+    $("loadNote").hidden = true;
+    $("err").textContent = "Le paiement n’a pas pu s’afficher. Rechargez la page.";
+  }
 }
 async function initPayment() {
   const my = ++initSeq;
-  pending = null; saved = "";
-  $("err").textContent = "";
-  lock(true, "Chargement du paiement…");
+  pending = null; saved = ""; session = null;
+  destroyAll();
+  $("err").textContent = ""; $("walletNote").textContent = "";
+  $("loadNote").hidden = false;
+  setGate(true);
   try {
-    const d = await call({ init: true });
+    const d = await call({ init: true, redirect_url: RETURN });
     if (my !== initSeq) return;
     if (!d.session_id || !d.pending_id) throw new Error("Erreur");
-    pending = d.pending_id;
-    await mountEmbed(d);
+    await loadElements();
     if (my !== initSeq) return;
-    lock(true, MSG_FILL);
+    session = d; pending = d.pending_id;
+    mountMethod();
     trySave();
   } catch (err) {
     if (my !== initSeq) return;
+    $("loadNote").hidden = true;
     $("err").textContent = "Le paiement n’a pas pu s’afficher. Rechargez la page.";
-    lock(true, "Paiement indisponible pour le moment.");
   }
 }
+function refreshGate() { setGate(!(pending && saved && saved === JSON.stringify(values()))); }
 async function trySave() {
   if (!pending) return;
   const v = values();
-  if (!complete(v)) { saved = ""; lock(true, MSG_FILL); return; }
+  if (!complete(v)) { saved = ""; setGate(true); return; }
   const key = JSON.stringify(v);
-  if (key === saved) { lock(false); return; }
-  lock(true, "Enregistrement de vos informations…");
+  if (key === saved) { setGate(false); return; }
+  setGate(true);
   const pid = pending;
   try {
     await call({
@@ -263,42 +360,68 @@ async function trySave() {
       shipping: { first_name: v.fn, last_name: v.ln, address1: v.a1, address2: v.a2, zip: v.zip, city: v.city, country_code: v.cc, phone: v.tel }
     });
     if (pid !== pending) return;
-    saved = key; lock(false);
-    if (whopEl) {
-      try {
-        whopEl.update({
-          buyerEmail: v.email,
-          defaultValues: { billingDetails: { name: v.fn + " " + v.ln, address: { line1: v.a1, line2: v.a2 || undefined, city: v.city, postal_code: v.zip, country: v.cc } } }
-        });
-      } catch (_) {}
-    }
+    saved = key;
+    if (key === JSON.stringify(values())) { setGate(false); $("err").textContent = ""; }
+    if (el && method === "card") { try { el.update(prefill(v)); } catch (_) {} }
   } catch (err) {
-    lock(true, "Vos informations n’ont pas pu être enregistrées. Vérifiez-les.");
+    $("err").textContent = "Vos informations n’ont pas pu être enregistrées. Vérifiez-les.";
   }
 }
 function schedule(force) {
   clearTimeout(timer);
   timer = setTimeout(() => { (force || !pending) ? initPayment() : trySave(); }, force ? 100 : 600);
 }
+
+/* Appui sur la zone de paiement alors que l'e-mail / l'adresse manquent */
+$("gate").addEventListener("click", () => {
+  const v = values();
+  const miss = firstMissing(v);
+  document.querySelectorAll("input.bad,select.bad").forEach((x) => x.classList.remove("bad"));
+  if (miss) {
+    const f = $(miss);
+    f.classList.add("bad");
+    $("err").textContent = miss === "email" ? "Saisissez votre adresse e-mail." : "Renseignez votre adresse de livraison.";
+    f.scrollIntoView({ behavior: "smooth", block: "center" });
+    setTimeout(() => f.focus({ preventScroll: true }), 300);
+  } else if (!pending) {
+    $("err").textContent = "Le paiement est en cours de chargement…";
+  } else {
+    $("err").textContent = "Enregistrement de vos informations, appuyez de nouveau dans un instant.";
+    trySave();
+  }
+});
+document.querySelectorAll(".tile").forEach((b) => b.addEventListener("click", () => {
+  if (b.dataset.m === method) return;
+  method = b.dataset.m;
+  document.querySelectorAll(".tile").forEach((t) => t.setAttribute("aria-pressed", String(t === b)));
+  mountMethod();
+}));
 ["email", "fn", "ln", "a1", "a2", "zip", "city", "cc", "tel"].forEach((id) => {
-  $(id).addEventListener("input", () => schedule(false));
-  $(id).addEventListener("change", () => schedule(false));
+  const f = $(id);
+  const on = () => { f.classList.remove("bad"); if (pending) refreshGate(); schedule(false); };
+  f.addEventListener("input", on);
+  f.addEventListener("change", on);
 });
 $("f").addEventListener("submit", (e) => e.preventDefault());
+
+/* ---------- Page de remerciement ---------- */
+function showThanks(status) {
+  destroyAll();
+  $("empty").hidden = true; $("f").hidden = true; $("thanks").hidden = false;
+  document.querySelector(".right").hidden = true;
+  document.querySelector(".wrap").style.gridTemplateColumns = "1fr";
+  if (status === "failed" || status === "canceled") {
+    $("thanks").querySelector("h2").textContent = "Votre paiement n’a pas abouti";
+    $("thanks").querySelectorAll("p")[0].textContent = "Aucun montant n’a été débité. Vous pouvez réessayer depuis votre panier.";
+  } else if (status && status !== "succeeded") {
+    $("thanks").querySelector("h2").textContent = "Confirmation en cours";
+    $("thanks").querySelectorAll("p")[0].textContent = "Votre paiement est en cours de traitement. Vous recevrez un e-mail de confirmation.";
+  }
+}
 {
   const q = new URLSearchParams(location.search);
   if (q.get("merci")) {
-    const st = q.get("status");
-    $("empty").hidden = true; $("thanks").hidden = false;
-    document.querySelector(".right").hidden = true;
-    document.querySelector(".wrap").style.gridTemplateColumns = "1fr";
-    if (st === "failed" || st === "canceled") {
-      $("thanks").querySelector("h2").textContent = "Votre paiement n’a pas abouti";
-      $("thanks").querySelectorAll("p")[0].textContent = "Aucun montant n’a été débité. Vous pouvez réessayer depuis votre panier.";
-    } else if (st && st !== "succeeded") {
-      $("thanks").querySelector("h2").textContent = "Confirmation en cours";
-      $("thanks").querySelectorAll("p")[0].textContent = "Votre paiement est en cours de traitement. Vous recevrez un e-mail de confirmation.";
-    }
+    showThanks(q.get("status"));
   } else if (items.length) {
     $("f").hidden = false;
     const pre = q.get("code");
