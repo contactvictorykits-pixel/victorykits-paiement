@@ -35,6 +35,9 @@
   .sum{display:flex;justify-content:space-between;margin:8px 0;color:var(--mut)}
   .sum.big{color:var(--fg);font-size:20px;font-weight:700;margin-top:16px}
   .ok{color:var(--acc)}
+  .pay-note{color:var(--mut);font-size:14px;margin-bottom:12px}
+  #embedBox{position:relative;min-height:240px}
+  .lock{position:absolute;inset:0;background:rgba(255,255,255,.82);display:flex;align-items:center;justify-content:center;text-align:center;padding:16px;font-weight:600;z-index:5;border-radius:8px}
   .methods{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
   .methods span{border:1px solid var(--line);border-radius:6px;padding:6px 10px;font-size:13px;color:#111;background:#fff}
   #embedWrap{margin-top:8px}
@@ -75,8 +78,11 @@
       <input id="tel" type="tel" placeholder="Téléphone (facultatif)" autocomplete="tel">
 
       <h2>Paiement</h2>
-      <div class="pay-box"><strong style="color:#111">Paiement sécurisé</strong><br><span id="payHint">Renseignez votre e-mail et votre adresse ci-dessus : le paiement s’affiche ici automatiquement.</span> Vos données bancaires sont chiffrées.<div class="methods"><span>Carte bancaire</span><span>Visa</span><span>Mastercard</span><span>American Express</span><span>Apple Pay</span><span>Google Pay</span></div><div style="margin-top:8px;font-size:12px">Apple Pay et Google Pay sont proposés selon votre appareil.</div></div>
-      <div id="embed"></div>
+      <div class="pay-note">Toutes les transactions sont sécurisées et chiffrées.</div>
+      <div id="embedBox">
+        <div id="embed"></div>
+        <div id="lock" class="lock"><span id="lockMsg">Chargement du paiement…</span></div>
+      </div>
       <div id="err" role="alert"></div>
     </form>
     <section id="thanks" hidden>
@@ -187,8 +193,15 @@ function values() {
   };
 }
 const complete = (v) => /^\S+@\S+\.\S+$/.test(v.email) && v.fn && v.ln && v.a1 && v.zip && v.city;
+const MSG_FILL = "Renseignez votre e-mail et votre adresse pour régler votre commande.";
 
-let whopCheckout = null;
+function lock(on, msg) {
+  $("lock").hidden = !on;
+  if (msg) $("lockMsg").textContent = msg;
+}
+
+let whopCheckout = null, whopEl = null, pending = null, saved = "", timer = null, initSeq = 0;
+
 function loadElements() {
   return new Promise((resolve, reject) => {
     if (window.WhopElements) return resolve();
@@ -204,23 +217,14 @@ function loadElements() {
   });
 }
 
-async function mountEmbed(d, v) {
+async function mountEmbed(d) {
   await loadElements();
-  if (whopCheckout) { try { whopCheckout.destroy(); } catch (_) {} whopCheckout = null; }
+  if (whopCheckout) { try { whopCheckout.destroy(); } catch (_) {} whopCheckout = null; whopEl = null; }
   const box = $("embed"); box.textContent = "";
   const target = document.createElement("div"); target.id = "whop-target"; box.appendChild(target);
   const base = {
     checkoutConfiguration: d.session_id,
     returnUrl: location.origin + location.pathname + "?merci=1"
-  };
-  const props = {
-    buyerEmail: v.email,
-    defaultValues: {
-      billingDetails: {
-        name: v.fn + " " + v.ln,
-        address: { line1: v.a1, line2: v.a2 || undefined, city: v.city, postal_code: v.zip, country: v.cc }
-      }
-    }
   };
   let handle;
   try {
@@ -232,41 +236,65 @@ async function mountEmbed(d, v) {
     handle = window.WhopElements().checkout.create(base);
   }
   whopCheckout = handle;
-  handle.create("checkout", props).mount("#whop-target");
-  $("payHint").textContent = "Choisissez votre moyen de paiement ci-dessous.";
+  whopEl = handle.create("checkout", {});
+  whopEl.mount("#whop-target");
 }
 
-let timer = null, seq = 0, lastKey = "";
-function schedule(force) {
-  clearTimeout(timer);
-  timer = setTimeout(() => prepare(force), 900);
-}
-async function prepare(force) {
-  const v = values();
-  const key = JSON.stringify([v, $("promo").value.trim()]);
-  if (!complete(v)) {
-    $("embed").textContent = ""; lastKey = "";
-    $("payHint").textContent = "Renseignez votre e-mail et votre adresse ci-dessus : le paiement s’affiche ici automatiquement.";
-    return;
-  }
-  if (!force && key === lastKey) return;
-  const my = ++seq;
+// 1) crée le paiement dès l'ouverture de la page (montant exact, code promo compris)
+async function initPayment() {
+  const my = ++initSeq;
+  pending = null; saved = "";
   $("err").textContent = "";
-  $("payHint").textContent = "Préparation du paiement…";
+  lock(true, "Chargement du paiement…");
   try {
-    const d = await call({
-      email: v.email,
+    const d = await call({ init: true });
+    if (my !== initSeq) return;
+    if (!d.session_id || !d.pending_id) throw new Error("Erreur");
+    pending = d.pending_id;
+    await mountEmbed(d);
+    if (my !== initSeq) return;
+    lock(true, MSG_FILL);
+    trySave();
+  } catch (err) {
+    if (my !== initSeq) return;
+    $("err").textContent = "Le paiement n’a pas pu s’afficher. Rechargez la page.";
+    lock(true, "Paiement indisponible pour le moment.");
+  }
+}
+
+// 2) dès que l'e-mail et l'adresse sont complets, on les enregistre puis on débloque le paiement
+async function trySave() {
+  if (!pending) return;
+  const v = values();
+  if (!complete(v)) { saved = ""; lock(true, MSG_FILL); return; }
+  const key = JSON.stringify(v);
+  if (key === saved) { lock(false); return; }
+  lock(true, "Enregistrement de vos informations…");
+  const pid = pending;
+  try {
+    await call({
+      save: true, pending_id: pid, email: v.email,
       shipping: { first_name: v.fn, last_name: v.ln, address1: v.a1, address2: v.a2, zip: v.zip, city: v.city, country_code: v.cc, phone: v.tel }
     });
-    if (my !== seq) return;
-    if (!(d.plan_id && d.session_id)) throw new Error("Erreur");
-    lastKey = key;
-    mountEmbed(d, v);
+    if (pid !== pending) return;
+    saved = key; lock(false);
+    if (whopEl) {
+      try {
+        whopEl.update({
+          buyerEmail: v.email,
+          defaultValues: { billingDetails: { name: v.fn + " " + v.ln, address: { line1: v.a1, line2: v.a2 || undefined, city: v.city, postal_code: v.zip, country: v.cc } } }
+        });
+      } catch (_) {}
+    }
   } catch (err) {
-    if (my !== seq) return;
-    $("err").textContent = "Le paiement n’a pas pu s’afficher. Vérifiez vos informations et réessayez.";
-    $("payHint").textContent = "Renseignez votre e-mail et votre adresse ci-dessus : le paiement s’affiche ici automatiquement.";
+    lock(true, "Vos informations n’ont pas pu être enregistrées. Vérifiez-les.");
   }
+}
+
+// force = true : le total a changé (code promo) -> nouveau paiement
+function schedule(force) {
+  clearTimeout(timer);
+  timer = setTimeout(() => { (force || !pending) ? initPayment() : trySave(); }, force ? 100 : 600);
 }
 ["email", "fn", "ln", "a1", "a2", "zip", "city", "cc", "tel"].forEach((id) => {
   $(id).addEventListener("input", () => schedule(false));
