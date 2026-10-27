@@ -35,6 +35,11 @@
   .tile .lab{font-size:14px}
   #embedBox{position:relative;min-height:120px}
   #loadNote{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--mut);pointer-events:none}
+  #embedBox.card{min-height:236px}
+  #skel{position:absolute;inset:0;z-index:4;background:#fff}
+  #skel .sk{height:50px;border:1px solid var(--line);border-radius:8px;padding:0 14px;display:flex;align-items:center;color:#8a8a8a;margin-bottom:12px;background:#fff}
+  #skel .sk-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  #skel .sk-btn{height:50px;border-radius:10px;background:var(--acc);opacity:.45;color:#fff;font-weight:700;display:flex;align-items:center;justify-content:center;margin-top:18px}
   #gate{position:absolute;left:0;right:0;z-index:5;background:transparent;cursor:pointer;-webkit-tap-highlight-color:transparent}
   #gate.card{bottom:0;height:64px}
   #gate.wallet{top:0;bottom:0}
@@ -102,8 +107,14 @@
         <button type="button" class="tile" data-m="wallet" aria-pressed="false"><span class="word" id="walletName">Apple Pay</span></button>
         <button type="button" class="tile" data-m="paypal" aria-pressed="false"><span class="word">PayPal</span></button>
       </div>
-      <div id="embedBox">
-        <div id="loadNote">Chargement du paiement…</div>
+      <div id="cardName"><input id="cn" placeholder="Nom sur la carte" autocomplete="cc-name" aria-label="Nom sur la carte"></div>
+      <div id="embedBox" class="card">
+        <div id="skel" aria-hidden="true">
+          <div class="sk">Numéro de carte</div>
+          <div class="sk-row"><div class="sk">MM / AA</div><div class="sk">CVC</div></div>
+          <div class="sk-btn">Payer</div>
+        </div>
+        <div id="loadNote" hidden>Chargement du paiement…</div>
         <div id="embed"></div>
         <div id="gate" class="card" hidden></div>
       </div>
@@ -213,19 +224,22 @@ function values() {
   return {
     email: $("email").value.trim(), fn: $("fn").value.trim(), ln: $("ln").value.trim(),
     a1: $("a1").value.trim(), a2: $("a2").value.trim(), zip: $("zip").value.trim(),
-    city: $("city").value.trim(), cc: $("cc").value, tel: $("tel").value.trim()
+    city: $("city").value.trim(), cc: $("cc").value, tel: $("tel").value.trim(),
+    cn: $("cn").value.trim()
   };
 }
 const firstMissing = (v) => {
   if (!/^\S+@\S+\.\S+$/.test(v.email)) return "email";
-  return ["fn", "ln", "a1", "zip", "city"].find((k) => !v[k]) || null;
+  const m = ["fn", "ln", "a1", "zip", "city"].find((k) => !v[k]);
+  if (m) return m;
+  return (method === "card" && !v.cn) ? "cn" : null;
 };
 const complete = (v) => !firstMissing(v);
 function prefill(v) {
   if (!/^\S+@\S+\.\S+$/.test(v.email)) return {};
   const p = { buyerEmail: v.email };
   if (v.fn && v.a1) {
-    p.defaultValues = { billingDetails: { name: (v.fn + " " + v.ln).trim(), address: { line1: v.a1, line2: v.a2 || undefined, city: v.city, postal_code: v.zip, country: v.cc } } };
+    p.defaultValues = { billingDetails: { name: (v.cn || (v.fn + " " + v.ln)).trim(), address: { line1: v.a1, line2: v.a2 || undefined, city: v.city, postal_code: v.zip, country: v.cc } } };
   }
   return p;
 }
@@ -233,7 +247,7 @@ function prefill(v) {
 /* ---------- Paiement Whop (intégré, sans quitter la page) ---------- */
 const IS_APPLE = !!window.ApplePaySession;
 $("walletName").textContent = IS_APPLE ? "Apple Pay" : "Google Pay";
-let touched = false, method = "card", handle = null, el = null, session = null, pending = null, saved = "", timer = null, initSeq = 0, walletTimer = null;
+let ready = false, mountSeq = 0, cnEdited = false, method = "card", handle = null, el = null, session = null, pending = null, saved = "", timer = null, initSeq = 0, walletTimer = null;
 
 function loadElements() {
   return new Promise((resolve, reject) => {
@@ -254,10 +268,18 @@ function destroyAll() {
   if (handle) { try { handle.destroy(); } catch (_) {} handle = null; }
   $("embed").textContent = "";
 }
+const isSaved = () => !!(pending && saved && saved === JSON.stringify(values()));
 function setGate(on) {
   const g = $("gate");
-  g.className = method === "card" ? "card" : "wallet";
+  g.className = (method === "card" && ready) ? "card" : "wallet";
   g.hidden = !on;
+}
+function showPlaceholder() {
+  const card = method === "card";
+  $("cardName").hidden = !card;
+  $("embedBox").classList.toggle("card", card);
+  $("skel").hidden = !card;
+  $("loadNote").hidden = card;
 }
 function walletUnavailable() {
   const name = method === "paypal" ? "PayPal" : $("walletName").textContent;
@@ -281,7 +303,7 @@ function buildHandle() {
     "whop-CheckoutCompanyPurchase": hide, "whop-CheckoutCompanyPurchaseCheckbox": hide,
     "whop-CheckoutPromoRow": hide,
     "whop-CheckoutTerms": hide, "whop-CheckoutPolicyLink": hide,
-    "whop-PaymentBillingBlock": hide, "whop-Address": hide, "whop-AddressManualEntry": hide,
+    "whop-Email": hide, "whop-PaymentBillingBlock": hide, "whop-Address": hide, "whop-AddressManualEntry": hide,
     "whop-CheckoutExpress": hide, "whop-CheckoutExpressButtons": hide, "whop-CheckoutExpressDivider": hide,
     "whop-CheckoutPayButton": { backgroundColor: "#1e9e50", color: "#ffffff", borderRadius: "10px", fontWeight: "700" }
   };
@@ -304,24 +326,33 @@ function buildHandle() {
 function mountMethod() {
   if (!session) return;
   destroyAll();
-  touched = false;
+  ready = false;
+  const mk = ++mountSeq;
   $("walletNote").textContent = "";
-  $("loadNote").hidden = false;
-  const target = document.createElement("div"); target.id = "whop-target"; $("embed").appendChild(target);
+  showPlaceholder();
   setGate(true);
+  // Carte : le vrai bloc n'est créé qu'une fois l'e-mail, l'adresse et le nom enregistrés,
+  // pour que ces informations (masquées dans le bloc) soient fournies dès sa création.
+  if (method === "card" && !isSaved()) return;
+  const target = document.createElement("div"); target.id = "whop-target"; $("embed").appendChild(target);
   try {
     handle = buildHandle();
-    const ready = () => { $("loadNote").hidden = true; checkWallet(700); };
-    const fail = () => { if (method !== "card") walletUnavailable(); };
+    const rdy = () => {
+      if (mk !== mountSeq || ready) return;
+      ready = true;
+      $("loadNote").hidden = true; $("skel").hidden = true; $("embedBox").classList.remove("card");
+      checkWallet(700); refreshGate();
+    };
+    const fail = () => { if (mk === mountSeq && method !== "card") walletUnavailable(); };
     const wallets = method === "paypal"
       ? { applePay: "never", googlePay: "never", payPal: "auto" }
       : (IS_APPLE ? { applePay: "auto", googlePay: "never", payPal: "never" } : { applePay: "never", googlePay: "auto", payPal: "never" });
     const type = method === "card" ? "checkout" : "expressCheckout";
     const props = method === "card" ? { ...prefill(values()) } : { wallets };
-    try { el = handle.create(type, { ...props, onReady: ready, onError: fail }); }
+    try { el = handle.create(type, { ...props, onReady: rdy, onError: fail }); }
     catch (_) { el = handle.create(type, props); }
     el.mount("#whop-target");
-    setTimeout(() => { $("loadNote").hidden = true; }, 6000);
+    setTimeout(rdy, 6000);
     checkWallet(4000);
     refreshGate();
   } catch (err) {
@@ -331,10 +362,10 @@ function mountMethod() {
 }
 async function initPayment() {
   const my = ++initSeq;
-  pending = null; saved = ""; session = null;
+  pending = null; saved = ""; session = null; ready = false;
   destroyAll();
   $("err").textContent = ""; $("walletNote").textContent = "";
-  $("loadNote").hidden = false;
+  showPlaceholder();
   setGate(true);
   try {
     const d = await call({ init: true, redirect_url: RETURN });
@@ -351,7 +382,7 @@ async function initPayment() {
     $("err").textContent = "Le paiement n’a pas pu s’afficher. Rechargez la page.";
   }
 }
-function refreshGate() { setGate(!(pending && saved && saved === JSON.stringify(values()))); }
+function refreshGate() { setGate(!isSaved()); }
 async function trySave() {
   if (!pending) return;
   const v = values();
@@ -368,10 +399,8 @@ async function trySave() {
     if (pid !== pending) return;
     saved = key;
     if (key === JSON.stringify(values())) { setGate(false); $("err").textContent = ""; }
-    if (el && method === "card") {
-      // Les infos de facturation sont masquées : on les fournit dès la création du bloc carte.
-      // Si le client n'a pas encore touché à la carte, on recrée le bloc avec ses infos.
-      if (!touched) mountMethod();
+    if (method === "card") {
+      if (!el) mountMethod();                       // 1re fois : on crée le bloc carte avec e-mail + adresse + nom
       else { try { el.update(prefill(v)); } catch (_) {} }
     }
   } catch (err) {
@@ -383,11 +412,6 @@ function schedule(force) {
   timer = setTimeout(() => { (force || !pending) ? initPayment() : trySave(); }, force ? 100 : 600);
 }
 
-window.addEventListener("blur", () => setTimeout(() => {
-  const a = document.activeElement;
-  if (a && a.tagName === "IFRAME" && $("embed").contains(a)) touched = true;
-}, 0));
-
 /* Appui sur la zone de paiement alors que l'e-mail / l'adresse manquent */
 $("gate").addEventListener("click", () => {
   const v = values();
@@ -396,7 +420,8 @@ $("gate").addEventListener("click", () => {
   if (miss) {
     const f = $(miss);
     f.classList.add("bad");
-    $("err").textContent = miss === "email" ? "Saisissez votre adresse e-mail." : "Renseignez votre adresse de livraison.";
+    $("err").textContent = miss === "email" ? "Saisissez votre adresse e-mail."
+      : miss === "cn" ? "Saisissez le nom figurant sur la carte." : "Renseignez votre adresse de livraison.";
     f.scrollIntoView({ behavior: "smooth", block: "center" });
     setTimeout(() => f.focus({ preventScroll: true }), 300);
   } else if (!pending) {
@@ -412,9 +437,12 @@ document.querySelectorAll(".tile").forEach((b) => b.addEventListener("click", ()
   document.querySelectorAll(".tile").forEach((t) => t.setAttribute("aria-pressed", String(t === b)));
   mountMethod();
 }));
-["email", "fn", "ln", "a1", "a2", "zip", "city", "cc", "tel"].forEach((id) => {
+// Le nom sur la carte reprend le prénom + nom, tant que le client ne l'a pas modifié
+const mirrorName = () => { if (!cnEdited) $("cn").value = ($("fn").value + " " + $("ln").value).trim(); };
+$("cn").addEventListener("input", () => { cnEdited = $("cn").value.trim() !== ""; });
+["email", "fn", "ln", "a1", "a2", "zip", "city", "cc", "tel", "cn"].forEach((id) => {
   const f = $(id);
-  const on = () => { f.classList.remove("bad"); if (pending) refreshGate(); schedule(false); };
+  const on = () => { if (id === "fn" || id === "ln") mirrorName(); f.classList.remove("bad"); if (pending) refreshGate(); schedule(false); };
   f.addEventListener("input", on);
   f.addEventListener("change", on);
 });
